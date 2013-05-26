@@ -79,8 +79,7 @@ def genome_to_ucsc_table(genome):
 def main():
     genomes = ["mm9", "mm10",
                "hg18", "hg19"]
-    #event_types = ["SE", "MXE", "A3SS", "A5SS", "RI"]
-    event_types = ["RI"]
+    event_types = ["SE", "MXE", "A3SS", "A5SS", "RI"]
     # Directory where UCSC tables are
     ucsc_tables_dir = os.path.expanduser("~/jaen/ucsc_tables/")
     events_dir = os.path.expanduser("~/jaen/gff-events/ver2/")
@@ -90,7 +89,7 @@ def main():
         curr_tables_dir = os.path.join(ucsc_tables_dir, genome)
         utils.make_dir(output_dir)
         cmd = \
-            "gff_make_annotation.py %s %s --genome-label %s --sanitize" \
+            "gff_make_annotation.py %s %s --genome-label %s --sanitize " \
             %(curr_tables_dir,
               output_dir,
               genome)
