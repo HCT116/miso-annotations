@@ -282,6 +282,7 @@ def main():
     splicegraph_events_dir = os.path.expanduser("~/jaen/gff-events")
     new_events_dir = os.path.expanduser("~/jaen/gff-events/ver2/")
     output_dir = os.path.expanduser("~/jaen/gff-events/merged-events/")
+    splicegraph_sanitized_dir = os.path.expanduser("~/jaen/gff-events/splicegraph_sanitized/")
     # TODO: add AFE/ALE
     event_types = ["SE_shortest_noAceView", "SE", "MXE", "A3SS", "A5SS", "RI"]
     print "Merging events..."
