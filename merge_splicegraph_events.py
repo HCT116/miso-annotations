@@ -4,6 +4,7 @@
 import os
 import sys
 import time
+import glob
 
 import gffutils
 import gffutils.helpers as helpers
@@ -276,7 +277,36 @@ def output_combined_gff_events(sg_gff_fname, sg_events,
     # Annotate the file
     print "Annotating merged GFF..."
     gffutils_helpers.annotate_gff(output_gff_fname, genome)
-    
+
+
+def sanitize_splicegraph_events(genome, event_type,
+                                splicegraph_dir, output_dir):
+    """
+    Sanitize and annotate old SpliceGraph events before
+    merging with new events.
+    """
+    gff_fname = os.path.join(splicegraph_dir, genome, "%s.%s.gff3" %(event_type,
+                                                                     genome))
+    if not os.path.isfile(gff_fname):
+        raise Exception, "Cannot find %s" %(gff_fname)
+    # Make output directory for sanitized files
+    output_dir = os.path.join(output_dir, genome)    
+    utils.make_dir(output_dir)
+    print "Sanitizing: %s" %(gff_fname)
+    gff_label = os.path.basename(gff_fname)
+    output_fname = os.path.join(output_dir, gff_label)
+    if os.path.isfile(output_fname):
+        print "%s already exists, skipping" %(output_fname)
+        return
+    sanitize_cmd = \
+        "gffutils-cli sanitize %s > %s" %(gff_fname, output_fname)
+    ret_val = os.system(sanitize_cmd)
+    if ret_val != 0:
+        raise Exception, "Sanitize command failed."
+    # Now that it is sanitized, annotate it
+    print "Annotating GFF..."
+    gffutils_helpers.annotate_gff(output_fname, genome)
+
 
 def main():
     splicegraph_events_dir = os.path.expanduser("~/jaen/gff-events")
@@ -291,9 +321,14 @@ def main():
         print "Genome: %s" %(genome)
         for event_type in event_types:
             print "Event type: %s" %(event_type)
+            print "Sanitizing old SpliceGraph annotation..."
+            sanitize_splicegraph_events(genome,
+                                        event_type,
+                                        splicegraph_events_dir,
+                                        splicegraph_sanitized_dir)
             merge_events(genome,
                          event_type,
-                         splicegraph_events_dir,
+                         splicegraph_sanitized_dir,
                          new_events_dir,
                          output_dir)
 
