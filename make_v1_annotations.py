@@ -72,8 +72,8 @@ def upload_annotations(events_dir, genomes):
 
 def main():
     # Ignore Drosophila annotations for now
-    genomes = ["mm9", "mm10",
-               "hg18", "hg19"]
+    #genomes = ["mm9", "hg18", "hg19"]
+    genomes = ["hg18", "hg19"]
     event_types = ["SE", "MXE", "A3SS", "A5SS", "RI", "AFE", "ALE"]
     # Directory where GFFs are
     events_dir = os.path.expanduser("~/jaen/gff-events/")
@@ -94,4 +94,7 @@ def main():
     # Zip the annotations
     zip_annotations(events_dir, genomes)
     upload_annotations(events_dir, genomes)
+
+if __name__ == "__main__":
+    main()
         
