@@ -13,7 +13,7 @@ import rnaseqlib.utils as utils
 import rnaseqlib.gff.gffutils_helpers as gffutils_helpers
 
 # Annotations version
-VERSION = "v2"
+VERSION = "v1"
 
 def zip_annotations(events_dir, genomes, 
                     flanking="commonshortest"):
@@ -29,7 +29,7 @@ def zip_annotations(events_dir, genomes,
     for genome in genomes:
         zip_fname = \
             os.path.join(events_dir,
-                         "miso_annotations_%s_%s.zip" %(genome, VERSION))
+                         "%s_alt_events.zip" %(genome, VERSION))
         if os.path.isfile(zip_fname):
             print "Removing old zip file..."
             os.unlink(zip_fname)
@@ -53,64 +53,45 @@ def upload_annotations(events_dir, genomes):
 
     Send to:
 
-    http://genes.mit.edu/burgelab/miso/annotations/ver2/
+    http://genes.mit.edu/burgelab/miso/annotations/
     """
     for genome in genomes:
         zip_fname = \
             os.path.join(events_dir,
-                         "miso_annotations_%s_%s.zip" %(genome, VERSION))
+                         "%s_alt_events.zip" %(genome, VERSION))
         if not os.path.isfile(zip_fname):
             raise Exception, "Cannot find annotation zip %s" %(zip_fname)
         cmd = \
-            "scp %s root@argonaute.mit.edu:/home/website/htdocs/burgelab/miso/annotations/ver2/" \
+            "scp %s root@argonaute.mit.edu:/home/website/htdocs/burgelab/miso/annotations/" \
             %(zip_fname)
         print "Uploading %s" %(os.path.basename(zip_fname))
-        os.system(cmd)
-        
-
-# Mapping from genome to a UCSC table
-def genome_to_ucsc_table(genome):
-    table_fname = \
-        os.path.expanduser("~/jaen/pipeline_init/%s/ucsc/ensGene.kgXref.combined.txt" \
-                           %(genome))
-    return table_fname
+        print cmd
+        print "DRY RUN"
+        #os.system(cmd)
 
 
 def main():
-    
+    # Ignore Drosophila annotations for now
     genomes = ["mm9", "mm10",
                "hg18", "hg19"]
-    event_types = ["SE", "MXE", "A3SS", "A5SS", "RI"]
-    # Directory where UCSC tables are
-    ucsc_tables_dir = os.path.expanduser("~/jaen/ucsc_tables/")
-    events_dir = os.path.expanduser("~/jaen/gff-events/ver2/")
+    event_types = ["SE", "MXE", "A3SS", "A5SS", "RI", "AFE", "ALE"]
+    # Directory where GFFs are
+    events_dir = os.path.expanduser("~/jaen/gff-events/")
     for genome in genomes:
-        print "Making annotations for %s" %(genome)
-        output_dir = os.path.join(events_dir, genome)
-        curr_tables_dir = os.path.join(ucsc_tables_dir, genome)
-        utils.make_dir(output_dir)
-        cmd = \
-            "gff_make_annotation.py %s %s --genome-label %s --sanitize " \
-            %(curr_tables_dir,
-              output_dir,
-              genome)
-        print "Executing: "
-        print cmd
-        os.system(cmd)
-    #Annotate the GFFs with gene information
-    gff_fnames = []
-    for genome in genomes:
-        commonshortest_dir = \
-            os.path.join(events_dir, genome, "commonshortest")
+        print "Making sanitized annotations for %s" %(genome)
         for event_type in event_types:
-            curr_gff = os.path.join(commonshortest_dir,
-                                    "%s.%s.gff3" %(event_type, genome))
-            gffutils_helpers.annotate_gff(curr_gff, genome)
+            print "Processing %s" %(event_type)
+            gff_fname = \
+                os.path.join(events_dir, genome, "%s.%s.gff3" %(event_type,
+                                                                genome))
+            if not os.path.isfile(gff_fname):
+                raise Exception, "Cannot find %s" %(gff_fname)
+            sanitize_cmd = \
+                "gffutils-cli sanitize %s --in-place" %(gff_fname)
+            print "Executing: "
+            print sanitize_cmd
+            os.system(sanitize_cmd)
     # Zip the annotations
-    #zip_annotations(events_dir, genomes)
-    #upload_annotations(events_dir, genomes)
+    zip_annotations(events_dir, genomes)
+    upload_annotations(events_dir, genomes)
         
-    
-
-if __name__ == "__main__":
-    main()

@@ -26,7 +26,8 @@ from collections import defaultdict
 
 def generic_merge(splicegraph_gff_fname, gff_fname, output_gff_fname,
                   genome, exon_id_suffix,
-                  coords_diff_cutoff=10):
+                  coords_diff_cutoff=10,
+                  SE_merge=False):
     # Load SpliceGraph skipped exons
     splicegraph_in = pybedtools.BedTool(splicegraph_gff_fname)
     splicegraph_exons = \
@@ -38,20 +39,44 @@ def generic_merge(splicegraph_gff_fname, gff_fname, output_gff_fname,
     intersected_gff = splicegraph_exons.intersect(new_exons,
                                                   wao=True,
                                                   s=True)
-    # Compile the overlaps for each exon
+    # Compile the overlaps for each exon and the exon it
+    # overlaps with
     exons_to_overlaps = defaultdict(list)
     for exon in intersected_gff:
         curr_overlap = int(exon.fields[-1])
-        exons_to_overlaps[exon.attrs["ID"]].append(curr_overlap)
+        exons_to_overlaps[exon.attrs["ID"]].append((curr_overlap, exon))
     # If the maximum overlap between the SpliceGraph exon and
     # all exons in the new GFF annotation is LESS than 'coords_diff_cutoff'
     # then keep the SpliceGraph exon in the annotation
     # Name of SpliceGraph event trios to include in merged annotation
     splicegraph_trios_to_add = []
-    for exon_id in exons_to_overlaps:
-        if max(exons_to_overlaps[exon_id]) < coords_diff_cutoff:
-            trio_id = exon_id.rsplit(".", 2)[0]
+    # Mapping from SpliceGraph potentially redundant trios
+    # to the new trios that they overlap with
+    sg_redundant_trios = defaultdict(list)
+    for exon_id in exons_to_overlaps:        
+        trio_id = exon_id.rsplit(".", 2)[0]
+        # Get maximum overlap
+        overlaps = \
+            [overlap_exon[0] \
+             for overlap_exon in exons_to_overlaps[exon_id]]
+        overlapping_trios = \
+            [overlap_exon[1].attrs["ID"].rsplit(".", 2)[0] \
+             for overlap_exon in exons_to_overlaps[exon_id]]
+        max_ind, max_overlap = utils.max_item(overlaps)
+        if max_overlap < coords_diff_cutoff:
             splicegraph_trios_to_add.append(trio_id)
+        else:
+            # Look at all new trios it overlaps with
+            for new_overlapping_trio_id in overlapping_trios:
+                if new_overlapping_trio_id != trio_id:
+                    sg_redundant_trios[trio_id].append(new_overlapping_trio_id)
+                else:
+                    # Skip identical trios
+                    continue
+            # Collect potentially redundant trios
+            sg_redundant_trios[trio_id].append(new_overlapping_trio_id)
+    # If we're dealing with SEs, then do an SE specific
+    # merge for the potentially redundant trios
     num_sg_trios = len(splicegraph_trios_to_add)
     print "Added %d trios from SpliceGraph" %(num_sg_trios)
     output_combined_gff_events(splicegraph_gff_fname,
@@ -131,7 +156,8 @@ def merge_events(genome,
                                 genome,
                                 "%s.%s.gff3" %(event_type, genome))
     if not os.path.isfile(sg_gff_fname):
-        raise Exception, "Cannot find %s" %(sg_gff_fname)
+        print "Cannot find %s" %(sg_gff_fname)
+        return
     if "_" in event_type:
         new_event_type = event_type.split("_")[0]
     else:
@@ -141,7 +167,8 @@ def merge_events(genome,
                                  "commonshortest",
                                  "%s.%s.gff3" %(new_event_type, genome))
     if not os.path.isfile(new_gff_fname):
-        raise Exception, "Cannot find %s" %(new_gff_fname)
+        print "Cannot find %s" %(new_gff_fname)
+        return
     output_dir = os.path.join(output_dir, genome)
     utils.make_dir(output_dir)
     output_gff_fname = \
@@ -203,22 +230,6 @@ def overlap_se(sg_gff_fname, new_gff_fname):
     print "Total of %d SE exons in both." %(in_both)
 
 
-# def gff_recs_from_tree(gene_tree):
-#     """
-#     Return all GFF records from a gene tree (generated
-#     by load_genes_from_gff)
-#     """
-#     recs = []
-#     gene_id = gene_tree.keys()[0]
-#     tree = gene_tree[gene_id]
-#     # Add gene record
-#     gene_rec = tree["gene"]
-#     recs.append(gene_rec)
-#     # Add mRNA record
-#     raise Exception
-#     print "GENE TREE: ", gene_tree
-#     return None
-
 def get_event_gff_recs(event_id, gff_db):
     """
     Get event's GFF records from a gff database.
@@ -255,11 +266,18 @@ def output_combined_gff_events(sg_gff_fname, sg_events,
     #sg_gff_genes = sg_db.features_of_type("gene")
     new_gff_genes = new_db.features_of_type("gene")
     # Output new events first
+    new_ids = {}
     for gene_rec in new_gff_genes:
         gene_id = gene_rec.id
         gff_out.write_gene_recs(new_db, gene_id)
+        new_ids[gene_id] = True
     # Output SG events
     for sg_gene_id in sg_events:
+        if sg_gene_id in new_ids:
+            print "Skipping %s" %(sg_gene_id)
+            # If this has an identical ID to one of the new annotation
+            # events, skip it
+            continue
         # Get all SG event records
         sg_recs = get_event_gff_recs(sg_gene_id, sg_db)
         # Add source attribute to each record
@@ -288,7 +306,8 @@ def sanitize_splicegraph_events(genome, event_type,
     gff_fname = os.path.join(splicegraph_dir, genome, "%s.%s.gff3" %(event_type,
                                                                      genome))
     if not os.path.isfile(gff_fname):
-        raise Exception, "Cannot find %s" %(gff_fname)
+        print "Cannot find %s" %(gff_fname)
+        return
     # Make output directory for sanitized files
     output_dir = os.path.join(output_dir, genome)    
     utils.make_dir(output_dir)
@@ -314,10 +333,10 @@ def main():
     output_dir = os.path.expanduser("~/jaen/gff-events/merged-events/")
     splicegraph_sanitized_dir = os.path.expanduser("~/jaen/gff-events/splicegraph_sanitized/")
     # TODO: add AFE/ALE
-    event_types = ["SE_shortest_noAceView", "SE", "MXE", "A3SS", "A5SS", "RI"]
+    event_types = ["SE_shortest_noAceView"]#, "SE", "MXE", "A3SS", "A5SS", "RI"]
     print "Merging events..."
     print "  - Output dir: %s" %(output_dir)
-    for genome in ["mm9"]:#["mm9", "hg18", "hg19"]:
+    for genome in ["mm9"]:#["hg19"]:
         print "Genome: %s" %(genome)
         for event_type in event_types:
             print "Event type: %s" %(event_type)
