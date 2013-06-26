@@ -13,6 +13,11 @@ genomes_to_events = {"mm9":
                       "MXE", "RI", "TandemUTR", "SE_shortest_noAceView",
                       "A3SS_shortest_noAceView", "A5SS_shortest_noAceView",
                       "MXE_shortest_noAceView"],
+                     "mm10":
+                     ["SE", "TandemUTR", "A3SS", "A5SS", "ALE", "AFE",
+                      "MXE", "RI", "TandemUTR", "SE_shortest_noAceView",
+                      "A3SS_shortest_noAceView", "A5SS_shortest_noAceView",
+                      "MXE_shortest_noAceView"],
                      "hg18":
                      ["SE", "TandemUTR", "A3SS", "A5SS", "ALE", "AFE",
                       "MXE", "RI", "SE_shortest_noAceView",
@@ -24,6 +29,7 @@ genomes_to_events = {"mm9":
 
 # Gene tables indexed by genome
 gene_tables = {"mm9": "/home/yarden/jaen/pipeline_init/mm9/ucsc/",
+               "mm10": "/home/yarden/jaen/pipeline_init/mm9/ucsc/",
                "hg18": "/home/yarden/jaen/pipeline_init/hg18/ucsc/",
                "hg19": "/home/yarden/jaen/pipeline_init/hg19/ucsc/"}
 
@@ -34,11 +40,12 @@ utils.make_dir(events_outdir)
 
 
 for genome, events in genomes_to_events.iteritems():
-    if genome != "hg19": continue
     print "Processing genome %s" %(genome)
     curr_outdir = os.path.join(events_outdir, genome)
     print "  - Output dir: %s" %(curr_outdir)
     for event in events:
+        if "AceView" in event:
+            continue
         print "Intersecting %s.." %(event)
         events_fname = os.path.join(events_dir,
                                     genome,
