@@ -25,6 +25,7 @@ def zip_annotations(events_dir, genomes,
     log_file = open(log_fname, "w")
     log_file.write("#GFF3 annotations of alternative events for MISO\n" \
                    "#created: %s\n" %(timestamp))
+    log_file.write("#version: %s\n" %(VERSION))
     log_file.close()
     for genome in genomes:
         zip_fname = \
@@ -77,7 +78,6 @@ def genome_to_ucsc_table(genome):
 
 
 def main():
-    
     genomes = ["mm9", "mm10",
                "hg18", "hg19"]
     event_types = ["SE", "MXE", "A3SS", "A5SS", "RI"]
@@ -96,7 +96,7 @@ def main():
               genome)
         print "Executing: "
         print cmd
-        os.system(cmd)
+        #os.system(cmd)
     #Annotate the GFFs with gene information
     gff_fnames = []
     for genome in genomes:
@@ -105,10 +105,10 @@ def main():
         for event_type in event_types:
             curr_gff = os.path.join(commonshortest_dir,
                                     "%s.%s.gff3" %(event_type, genome))
-            gffutils_helpers.annotate_gff(curr_gff, genome)
+            #gffutils_helpers.annotate_gff(curr_gff, genome)
     # Zip the annotations
-    #zip_annotations(events_dir, genomes)
-    #upload_annotations(events_dir, genomes)
+    zip_annotations(events_dir, genomes)
+    upload_annotations(events_dir, genomes)
         
     
 

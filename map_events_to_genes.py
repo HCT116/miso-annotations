@@ -44,7 +44,7 @@ for genome, events in genomes_to_events.iteritems():
     curr_outdir = os.path.join(events_outdir, genome)
     print "  - Output dir: %s" %(curr_outdir)
     for event in events:
-        if "AceView" in event:
+        if ("AceView" in event) or ("3pseq" in event):
             continue
         print "Intersecting %s.." %(event)
         events_fname = os.path.join(events_dir,

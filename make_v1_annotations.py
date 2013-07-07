@@ -38,6 +38,7 @@ def zip_annotations(events_dir, genomes):
     log_file = open(log_fname, "w")
     log_file.write("#GFF3 annotations of alternative events for MISO\n" \
                    "#created: %s\n" %(timestamp))
+    log_file.write("#version: %s\n" %(VERSION))
     log_file.close()
     for genome in genomes:
         zip_fname = \
@@ -84,8 +85,7 @@ def upload_annotations(events_dir, genomes):
             %(zip_fname)
         print "Uploading %s" %(os.path.basename(zip_fname))
         print cmd
-        print "DRY RUN"
-        #os.system(cmd)
+        os.system(cmd)
 
 
 def liftOver_hg18_events(events_dir, event_types):
@@ -126,7 +126,7 @@ def main():
     # Ignore Drosophila annotations for now
     #genomes = ["mm9", "hg18", "hg19"]
     genomes = ["hg18", "mm9"]
-    event_types = ["SE", "MXE", "A3SS", "A5SS", "RI", "AFE", "ALE"]
+    event_types = ["SE", "MXE", "A3SS", "A5SS", "RI", "AFE", "ALE", "TandemUTR"]
     # Directory where GFFs are
     events_dir = os.path.expanduser("~/jaen/gff-events/")
     for genome in genomes:
@@ -142,7 +142,7 @@ def main():
                 "gffutils-cli sanitize %s --in-place" %(gff_fname)
             print "Executing: "
             print sanitize_cmd
-            os.system(sanitize_cmd)
+            #os.system(sanitize_cmd)
     # Make hg19 annotations from hg18
     liftOver_hg18_events(events_dir, event_types)
     # Make mm10 annotations from mm9
@@ -150,6 +150,23 @@ def main():
     # Zip the annotations
     zip_annotations(events_dir, genomes)
     upload_annotations(events_dir, genomes)
+    # Sanitize liftedOver annotations mm10, hg19
+    liftedOver_genomes = ["mm10", "hg19"]
+    for genome in liftedOver_genomes:
+        for event_type in event_types:
+            print "Sanitizing %s for %s" %(event_type, genome)
+            gff_fname = \
+                os.path.join(events_dir, genome, "%s.%s.gff3" %(event_type,
+                                                                genome))
+            if not os.path.isfile(gff_fname):
+                raise Exception, "Cannot find %s" %(gff_fname)
+            sanitize_cmd = \
+                "gffutils-cli sanitize %s --in-place" %(gff_fname)
+            print "Executing: "
+            print sanitize_cmd
+            #os.system(sanitize_cmd)
+    zip_annotations(events_dir, liftedOver_genomes)
+    upload_annotations(events_dir, liftedOver_genomes)
 
 if __name__ == "__main__":
     main()
