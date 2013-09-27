@@ -7,10 +7,11 @@ import glob
 import time
 import zipfile
 from time import strftime, localtime
-
 import rnaseqlib
 import rnaseqlib.utils as utils
 import rnaseqlib.gff.gffutils_helpers as gffutils_helpers
+
+import remove_empty_attrs
 
 # Annotations version
 VERSION = "v1"
@@ -143,6 +144,8 @@ def main():
             print "Executing: "
             print sanitize_cmd
             #os.system(sanitize_cmd)
+            print "Cleaning up empty attributes..."
+            remove_empty_attrs.run(gff_fname)            
     # Make hg19 annotations from hg18
     liftOver_hg18_events(events_dir, event_types)
     # Make mm10 annotations from mm9
@@ -165,6 +168,9 @@ def main():
             print "Executing: "
             print sanitize_cmd
             #os.system(sanitize_cmd)
+            print "Cleaning up empty attributes..."
+            remove_empty_attrs.run(gff_fname)
+            
     zip_annotations(events_dir, liftedOver_genomes)
     upload_annotations(events_dir, liftedOver_genomes)
 
