@@ -105,7 +105,7 @@ def main():
         for event_type in event_types:
             curr_gff = os.path.join(commonshortest_dir,
                                     "%s.%s.gff3" %(event_type, genome))
-            #gffutils_helpers.annotate_gff(curr_gff, genome)
+            gffutils_helpers.annotate_gff(curr_gff, genome)
     # Zip the annotations
     zip_annotations(events_dir, genomes)
     upload_annotations(events_dir, genomes)
