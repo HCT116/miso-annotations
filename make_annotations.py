@@ -1,4 +1,4 @@
-##
+1;2c##
 ## Driver script for making all annotations v2.0
 ##
 import os
@@ -11,6 +11,8 @@ from time import strftime, localtime
 import rnaseqlib
 import rnaseqlib.utils as utils
 import rnaseqlib.gff.gffutils_helpers as gffutils_helpers
+
+import remove_empty_attrs
 
 # Annotations version
 VERSION = "v2"
@@ -90,7 +92,7 @@ def main():
         curr_tables_dir = os.path.join(ucsc_tables_dir, genome)
         utils.make_dir(output_dir)
         cmd = \
-            "gff_make_annotation.py %s %s --genome-label %s --sanitize " \
+            "gff_make_annotation %s %s --genome-label %s --sanitize " \
             %(curr_tables_dir,
               output_dir,
               genome)
@@ -106,6 +108,9 @@ def main():
             curr_gff = os.path.join(commonshortest_dir,
                                     "%s.%s.gff3" %(event_type, genome))
             gffutils_helpers.annotate_gff(curr_gff, genome)
+            # Clean up empty attributes
+            print "Cleaning up empty attributes"
+            remove_empty_attrs.run(curr_gff)
     # Zip the annotations
     zip_annotations(events_dir, genomes)
     upload_annotations(events_dir, genomes)
