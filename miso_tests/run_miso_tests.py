@@ -16,7 +16,7 @@ def clear_output_dir():
     # Clear out the previous test output directory
     print "Clearing previous output directory..."
     if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
+        shutil.rmtree(output_dir, ignore_errors=True)
     # Make new output directory
     misc_utils.make_dir(output_dir)
 
@@ -27,9 +27,9 @@ class MISOFunctionalTests(unittest.TestCase):
     def setUp(self):
         self.data_dir = "./data"
         self.gff_fname = "./gff/SE.head_5000.mm9.gff3"
-        self.bam_fname = os.path.join(self.data_dir, "mm9_reads_1.bam")
+        self.bam_fname = os.path.join(self.data_dir, "mm9_sample1.bam")
         self.sample1_bam = self.bam_fname
-        self.sample2_bam = os.path.join(self.data_dir, "mm9_reads_2.bam")
+        self.sample2_bam = os.path.join(self.data_dir, "mm9_sample2.bam")
         self.ensGene_gff = "./gff/ensGene.head_10000.gff3"
         self.output_dir = OUTPUT_DIR
         self.settings_fname = "./miso_settings.txt"
@@ -37,10 +37,13 @@ class MISOFunctionalTests(unittest.TestCase):
                                          "sample1_output")
         self.sample2_output = os.path.join(self.output_dir,
                                            "sample2_output")
+        self.sample1_output_compressed = \
+          os.path.join(self.output_dir,
+                       "sample1_output_compressed")
         # Sample1 output with compressed index
         self.sample1_output_comp = os.path.join(self.output_dir,
                                                 "sample1_output_comp_index")
-        self.sample1_compressed_ids_fname = \
+        self.compressed_ids_fname = \
           os.path.join(self.output_dir,
                        "index_compressed",
                        "compressed_ids_to_genes.shelve")
@@ -93,6 +96,7 @@ class MISOFunctionalTests(unittest.TestCase):
 
     def test_b_pe_utils(self):
         print "Test PE utils"
+        
         cmd = "pe_utils --compute-insert-len "
 
 
@@ -110,7 +114,7 @@ class MISOFunctionalTests(unittest.TestCase):
         cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
               %(comp_index_dir,
                 self.sample1_bam,
-                self.sample1_output)
+                self.sample1_output_compressed)
         self.run_cmd(cmd)
         # Run on sample2
         output_dir = os.path.join(self.output_dir,
@@ -208,8 +212,11 @@ class MISOFunctionalTests(unittest.TestCase):
                                    "miso_output_single_end_compressed")
         output_dir = os.path.join(self.output_dir,
                                   "summary_single_end_compressed")
-        cmd = "summarize_miso --summarize-samples %s %s" %(miso_output,
-                                                           output_dir)
+        cmd = \
+          "summarize_miso --summarize-samples %s %s --use-compressed %s" \
+          %(miso_output,
+            output_dir,
+            self.compressed_ids_fname)
         
         
     def test_d_compare_samples(self):
@@ -246,7 +253,7 @@ class MISOFunctionalTests(unittest.TestCase):
                    %(self.sample1_output,
                      self.sample2_output,
                      output_dir,
-                     self.sample1_compressed_ids_fname)
+                     self.compressed_ids_fname)
         self.run_cmd(comp_cmd)
 
 
