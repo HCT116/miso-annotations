@@ -37,6 +37,13 @@ class MISOFunctionalTests(unittest.TestCase):
                                          "sample1_output")
         self.sample2_output = os.path.join(self.output_dir,
                                            "sample2_output")
+        # Sample1 output with compressed index
+        self.sample1_output_comp = os.path.join(self.output_dir,
+                                                "sample1_output_comp_index")
+        self.sample1_compressed_ids_fname = \
+          os.path.join(self.output_dir,
+                       "index_compressed",
+                       "compressed_ids_to_genes.shelve")
         
 
     def run_cmd(self, cmd):
@@ -92,13 +99,18 @@ class MISOFunctionalTests(unittest.TestCase):
     def test_b_run_miso_two_samples(self):
         print "Run MISO on sample1 and sample2"
         # Run on sample1
-        output_dir = os.path.join(self.output_dir,
-                                  self.sample1_output)
         index_dir = os.path.join(self.output_dir, "index")        
         cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
               %(index_dir,
                 self.sample1_bam,
-                output_dir)
+                self.sample1_output)
+        self.run_cmd(cmd)
+        # Run sample1 with compressed index too
+        comp_index_dir = os.path.join(self.output_dir, "index_compressed")        
+        cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
+              %(comp_index_dir,
+                self.sample1_bam,
+                self.sample1_output)
         self.run_cmd(cmd)
         # Run on sample2
         output_dir = os.path.join(self.output_dir,
@@ -106,7 +118,7 @@ class MISOFunctionalTests(unittest.TestCase):
         cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
               %(index_dir,
                 self.sample2_bam,
-                output_dir)
+                self.sample2_output)
         self.run_cmd(cmd)
         
 
@@ -191,6 +203,13 @@ class MISOFunctionalTests(unittest.TestCase):
         cmd = "summarize_miso --summarize-samples %s %s" %(miso_output,
                                                            output_dir)
         self.run_cmd(cmd)
+        # Summarize output for a sample with a compressed GFF index
+        miso_output = os.path.join(self.output_dir,
+                                   "miso_output_single_end_compressed")
+        output_dir = os.path.join(self.output_dir,
+                                  "summary_single_end_compressed")
+        cmd = "summarize_miso --summarize-samples %s %s" %(miso_output,
+                                                           output_dir)
         
         
     def test_d_compare_samples(self):
@@ -220,6 +239,16 @@ class MISOFunctionalTests(unittest.TestCase):
                      self.sample2_output,
                      output_dir)
         self.run_cmd(comp_cmd)
+        # Compare samples with sample1 made from a compressed
+        # index
+        comp_cmd = "compare_miso --compare-samples %s %s %s " \
+                   "--use-compressed %s" \
+                   %(self.sample1_output,
+                     self.sample2_output,
+                     output_dir,
+                     self.sample1_compressed_ids_fname)
+        self.run_cmd(comp_cmd)
+
 
         
 def main():
