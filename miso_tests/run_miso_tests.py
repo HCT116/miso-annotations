@@ -33,6 +33,10 @@ class MISOFunctionalTests(unittest.TestCase):
         self.ensGene_gff = "./gff/ensGene.head_10000.gff3"
         self.output_dir = OUTPUT_DIR
         self.settings_fname = "./miso_settings.txt"
+        self.sample1_output = os.path.join(self.output_dir,
+                                         "sample1_output")
+        self.sample2_output = os.path.join(self.output_dir,
+                                           "sample2_output")
         
 
     def run_cmd(self, cmd):
@@ -40,6 +44,16 @@ class MISOFunctionalTests(unittest.TestCase):
         ret_val = os.system(cmd)
         if ret_val != 0:
             raise Exception, "Command failed."
+
+
+    def test_a_module_availability(self):
+        cmd = "module_availability"
+        self.run_cmd(cmd)
+
+
+    def test_a_miso_version(self):
+        cmd = "MISO version"
+        self.run_cmd("miso --version")
         
         
     def test_a_index(self):
@@ -78,7 +92,8 @@ class MISOFunctionalTests(unittest.TestCase):
     def test_b_run_miso_two_samples(self):
         print "Run MISO on sample1 and sample2"
         # Run on sample1
-        output_dir = os.path.join(self.output_dir, "sample1_output")
+        output_dir = os.path.join(self.output_dir,
+                                  self.sample1_output)
         index_dir = os.path.join(self.output_dir, "index")        
         cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
               %(index_dir,
@@ -86,7 +101,8 @@ class MISOFunctionalTests(unittest.TestCase):
                 output_dir)
         self.run_cmd(cmd)
         # Run on sample2
-        output_dir = os.path.join(self.output_dir, "sample2_output")
+        output_dir = os.path.join(self.output_dir,
+                                  self.sample2_output)
         cmd = "miso --run %s %s --read-len 40 --output-dir %s" \
               %(index_dir,
                 self.sample2_bam,
@@ -180,7 +196,30 @@ class MISOFunctionalTests(unittest.TestCase):
     def test_d_compare_samples(self):
         print "Test MISO sample comparison"
         # Compare regular miso outputs
-        
+        output_dir = os.path.join(self.output_dir, "test_comparison")
+        comp_cmd = "compare_miso --compare-samples %s %s %s" \
+                   %(self.sample1_output,
+                     self.sample2_output,
+                     output_dir)
+        self.run_cmd(comp_cmd)
+        # Pack one of the samples's outputs (sample1)
+        cmd = "miso_pack --pack %s" %(self.sample1_output)
+        self.run_cmd(cmd)
+        # Run comparison: packed output versus unpacked output
+        comp_cmd = "compare_miso --compare-samples %s %s %s" \
+                   %(self.sample1_output,
+                     self.sample2_output,
+                     output_dir)
+        self.run_cmd(comp_cmd)
+        # Pack the second sample's output (sample2)
+        cmd = "miso_pack --pack %s" %(self.sample2_output)
+        self.run_cmd(cmd)
+        # Run comparison: this time packed versus packed outputs
+        comp_cmd = "compare_miso --compare-samples %s %s %s" \
+                   %(self.sample1_output,
+                     self.sample2_output,
+                     output_dir)
+        self.run_cmd(comp_cmd)
 
         
 def main():
