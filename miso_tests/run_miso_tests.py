@@ -96,8 +96,8 @@ class MISOFunctionalTests(unittest.TestCase):
 
     def test_b_pe_utils(self):
         print "Test PE utils"
-        
         cmd = "pe_utils --compute-insert-len "
+        # TODO: complete me!
 
 
     def test_b_run_miso_two_samples(self):
