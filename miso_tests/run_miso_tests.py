@@ -20,16 +20,22 @@ def clear_output_dir():
     # Make new output directory
     misc_utils.make_dir(output_dir)
 
+
 class MISOFunctionalTests(unittest.TestCase):
     """
     Test MISO functionality on large scale data.
     """
     def setUp(self):
         self.data_dir = "./data"
-        self.gff_fname = "./gff/SE.head_5000.mm9.gff3"
+        self.gff_dir = "./gff"
+        self.gff_fname = \
+          os.path.join(self.gff_dir, "SE.head_5000.mm9.gff3")
         self.bam_fname = os.path.join(self.data_dir, "mm9_sample1.bam")
         self.sample1_bam = self.bam_fname
         self.sample2_bam = os.path.join(self.data_dir, "mm9_sample2.bam")
+        # BAM with mixed read lengths
+        self.mixed_bam_fname = \
+          os.path.join(self.data_dir, "mm9_mixed_se_reads.bam")
         self.ensGene_gff = "./gff/ensGene.head_10000.gff3"
         self.output_dir = OUTPUT_DIR
         self.settings_fname = "./miso_settings.txt"
@@ -41,8 +47,9 @@ class MISOFunctionalTests(unittest.TestCase):
           os.path.join(self.output_dir,
                        "sample1_output_compressed")
         # Sample1 output with compressed index
-        self.sample1_output_comp = os.path.join(self.output_dir,
-                                                "sample1_output_comp_index")
+        self.sample1_output_comp = \
+          os.path.join(self.output_dir,
+                       "sample1_output_comp_index")
         self.compressed_ids_fname = \
           os.path.join(self.output_dir,
                        "index_compressed",
@@ -56,6 +63,45 @@ class MISOFunctionalTests(unittest.TestCase):
             raise Exception, "Command failed."
 
 
+    def index_gff_fname(self, gff_fname):
+        """
+        Index a GFF filename and return a link to
+        its indexed directory.
+        """
+        output_dir = os.path.join(self.output_dir, "tmp",
+                                  os.path.basename(gff_fname))
+        print "Indexing %s to %s" %(gff_fname, output_dir)
+        cmd = "index_gff --index %s %s" \
+              %(self.gff_fname, output_dir)
+        self.run_cmd(cmd)
+        return output_dir
+
+
+    def get_gff_fname(self, test_name):
+        """
+        Given a filename like 'SE.se_event1'
+        return an absolute path to the GFF example, which is
+        typically: '/some/path/to/SE.se_event1.gff3' (note
+        the .gff3 extension)
+        """
+        gff_fname = os.path.join(self.gff_dir, "%s.gff3" %(test_name))
+        if not os.path.isfile(gff_fname):
+            raise Exception, "No GFF file %s found" %(gff_fname)
+        return gff_fname
+    
+
+    def index_gff_example(self, gff_example_name):
+        """
+        Given a GFF example name like 'SE.event1.mm9',
+        index its GFF and return the path to the GFF directory.
+        """
+        # First get the GFF filename
+        gff_fname = self.get_gff_fname(gff_example_name)
+        # Then index it
+        index_dir = self.index_gff_fname(gff_fname)
+        return index_dir
+
+        
     def test_a_module_availability(self):
         cmd = "module_availability"
         self.run_cmd(cmd)
@@ -161,6 +207,27 @@ class MISOFunctionalTests(unittest.TestCase):
                 output_dir,
                 self.settings_fname)
         self.run_cmd(cmd)
+
+
+    def test_b_run_miso_mixed_single_end_reads(self):
+        """
+        Run MISO mixed read lengths file. Uses the example
+        SE event "SE.event1.mm9" 
+        """
+        print "Test run MISO single-end on mixed read lengths"
+        output_dir = os.path.join(self.output_dir,
+                                  "miso_output_mixed_readlen_single_end")
+        index_dir = self.index_gff_example("SE.event1.mm9")
+        # Call cluster but don't wait for jobs
+        cmd = "miso --run %s %s --read-len 40 --output-dir %s " \
+              "--settings-filename %s" \
+              %(index_dir,
+                self.mixed_bam_fname,
+                output_dir,
+                self.settings_fname)
+        self.run_cmd(cmd)
+        print "QUITTING..."
+        sys.exit(1)
         
 
     def test_b_run_miso_paired_end(self):
