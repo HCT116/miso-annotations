@@ -226,8 +226,6 @@ class MISOFunctionalTests(unittest.TestCase):
                 output_dir,
                 self.settings_fname)
         self.run_cmd(cmd)
-        print "QUITTING..."
-        sys.exit(1)
         
 
     def test_b_run_miso_paired_end(self):
