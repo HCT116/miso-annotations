@@ -30,7 +30,10 @@ class MISOFunctionalTests(unittest.TestCase):
         self.gff_dir = "./gff"
         self.gff_fname = \
           os.path.join(self.gff_dir, "SE.head_5000.mm9.gff3")
+        self.small_gff_fname = \
+          os.path.join(self.gff_dir, "SE.head_500.mm9.gff3")
         self.bam_fname = os.path.join(self.data_dir, "mm9_sample1.bam")
+        self.small_bam_fname = os.path.join(self.data_dir, "mm9_sample1_chr1.bam")        
         self.sample1_bam = self.bam_fname
         self.sample2_bam = os.path.join(self.data_dir, "mm9_sample2.bam")
         # BAM with mixed read lengths
@@ -117,9 +120,15 @@ class MISOFunctionalTests(unittest.TestCase):
         Test index.
         """
         print "Test index"
+        # Large index
         cmd = "index_gff --index %s %s" \
               %(self.gff_fname,
                 os.path.join(self.output_dir, "index"))
+        self.run_cmd(cmd)        
+        # Small index
+        cmd = "index_gff --index %s %s" \
+              %(self.small_gff_fname,
+                os.path.join(self.output_dir, "small_index"))
         self.run_cmd(cmd)
         
 
@@ -235,6 +244,17 @@ class MISOFunctionalTests(unittest.TestCase):
         cmd = "miso --run %s %s --read-len 40 --output-dir %s --paired-end 200 20" \
               %(index_dir,
                 self.bam_fname,
+                output_dir)
+        self.run_cmd(cmd)
+        
+
+    def test_b2_run_miso_paired_end_small(self):
+        print "Test run MISO paired-end (small GFF)"
+        output_dir = os.path.join(self.output_dir, "miso_output_paired_end_small")
+        index_dir = os.path.join(self.output_dir, "small_index")
+        cmd = "miso --run %s %s --read-len 40 --output-dir %s --paired-end 200 20" \
+              %(index_dir,
+                self.small_bam_fname,
                 output_dir)
         self.run_cmd(cmd)
 
